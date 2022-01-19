@@ -3,7 +3,7 @@ module github.com/eluv-io/utc-go
 go 1.17
 
 require (
-	github.com/eluv-io/errors-go v0.0.0-20220118153923-f9ef09c8c7f2
+	github.com/eluv-io/errors-go v1.0.0
 	github.com/stretchr/testify v1.7.0
 )
 
