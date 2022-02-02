@@ -1,5 +1,8 @@
 # UTC - A `time.Time` Wrapper for ISO8601 / RFC3339 
 
+[![](https://github.com/eluv-io/utc-go/actions/workflows/build.yaml/badge.svg)](https://github.com/eluv-io/utc-go/actions?query=workflow%3Abuild)
+[![CodeQL](https://github.com/eluv-io/utc-go/actions/workflows/codeql-analysis.yaml/badge.svg)](https://github.com/eluv-io/utc-go/actions/workflows/codeql-analysis.yaml)
+
 The package `utc` consists of a single struct `UTC` that is a small wrapper around the standard lib's `time.Time`. It provides the following main functions:
 
 * times in the UTC timezone (Coordinated Universal Time)
