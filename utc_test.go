@@ -569,14 +569,14 @@ func assertTimezone(t *testing.T, val utc.UTC) {
 	require.Equal(t, "UTC", zone)
 }
 
-//  go test -v -bench "Benchmark" -benchtime 5s -run "none" github.com/eluv-io/utc
-//	goos: darwin
-//	goarch: amd64
-//	pkg: github.com/eluv-io/utc
-//	BenchmarkString/time.Time.String-8         	20580853	       286 ns/op	      32 B/op	       1 allocs/op
-//	BenchmarkString/utc.UTC.StringOpt-8        	70914042	        82.5 ns/op	      32 B/op	       1 allocs/op
-//	PASS
-//	ok  	github.com/eluv-io/utc	12.143s
+//	 go test -v -bench "Benchmark" -benchtime 5s -run "none" github.com/eluv-io/utc
+//		goos: darwin
+//		goarch: amd64
+//		pkg: github.com/eluv-io/utc
+//		BenchmarkString/time.Time.String-8         	20580853	       286 ns/op	      32 B/op	       1 allocs/op
+//		BenchmarkString/utc.UTC.StringOpt-8        	70914042	        82.5 ns/op	      32 B/op	       1 allocs/op
+//		PASS
+//		ok  	github.com/eluv-io/utc	12.143s
 func BenchmarkString(b *testing.B) {
 	now := utc.Now()
 	benchmarks := []struct {
@@ -594,4 +594,15 @@ func BenchmarkString(b *testing.B) {
 			}
 		})
 	}
+}
+
+func TestWall(t *testing.T) {
+	now := utc.Now()
+	wall := utc.WallNow()
+	wallMs := utc.WallNowMs()
+
+	ws := wall.Sub(now)
+	require.True(t, ws <= time.Microsecond*100, "ws: %v", ws)
+	ws = wallMs.Sub(now)
+	require.True(t, ws <= time.Millisecond, "ws: %v", ws)
 }

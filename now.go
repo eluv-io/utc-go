@@ -39,6 +39,19 @@ func Now() UTC {
 	return nowFn()
 }
 
+// WallNow returns Now as a wall clock, i.e. with the monotonic clock reading stripped.
+// WallNow is equivalent to calling Now().StripMono().
+func WallNow() UTC {
+	return Now().StripMono()
+}
+
+// WallNowMs returns Now as a wall clock rounded to the millisecond.
+// WallNowMs is equivalent to calling WallNow().Round(time.Millisecond) and useful in tests where UTC instances are
+// serialized and compared.
+func WallNowMs() UTC {
+	return WallNow().Round(time.Millisecond)
+}
+
 // now is the default, non-mocked value of Now.
 func now() UTC {
 	return New(time.Now())
