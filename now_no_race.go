@@ -2,10 +2,6 @@
 
 package utc
 
-func init() {
-	setNowFn(now)
-}
-
 // clockNowFn is the function used to get the current time and can be mocked with MockNow/MockNowFn
 var clock Clock
 
@@ -18,6 +14,8 @@ func getClock() Clock {
 }
 
 func setClock(c Clock) {
+	allowClock()
+
 	old := clock
 	clock = c
 

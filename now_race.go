@@ -4,10 +4,6 @@ package utc
 
 import "sync/atomic"
 
-func init() {
-	setNowFn(now)
-}
-
 type clocker struct {
 	c Clock
 }
@@ -24,6 +20,8 @@ func getClock() Clock {
 }
 
 func setClock(c Clock) {
+	allowClock()
+
 	old := getClock()
 	n := &clocker{c: c}
 	atomicClock.Store(n)

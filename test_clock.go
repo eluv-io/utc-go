@@ -9,6 +9,8 @@ import (
 // Function Now:
 // - returns the previously set UTC or
 // - returns the wall clock if no value or Zero was set
+// A TestClock becomes effectively used as 'the global clock' after calling its
+// function MockNow(). When the clock is effective, func IsMock returns true.
 type TestClock struct {
 	mono bool
 	ms   bool
@@ -16,14 +18,18 @@ type TestClock struct {
 	m    *atomic.Bool
 }
 
+// NewMonoClock returns a TestClock with the monotonic clock reading.
 func NewMonoClock(u ...UTC) TestClock {
 	return newTestClock(true, false, u...)
 }
 
+// NewWallClock returns a TestClock with the monotonic clock reading stripped.
 func NewWallClock(u ...UTC) TestClock {
 	return newTestClock(false, false, u...)
 }
 
+// NewWallClockMs returns a TestClock with the monotonic clock reading stripped
+// and time rounded to the millisecond.
 func NewWallClockMs(u ...UTC) TestClock {
 	return newTestClock(false, true, u...)
 }
@@ -39,6 +45,8 @@ func newTestClock(mono, ms bool, u ...UTC) TestClock {
 	return ret
 }
 
+// MockNow sets this clock as the global clock. After this call utc.Now returns
+// what the function Now of this clock returns.
 func (c TestClock) MockNow() TestClock {
 	setClock(c)
 	c.m.Store(true)
@@ -49,10 +57,13 @@ func (c TestClock) unMocked() {
 	c.m.Store(false)
 }
 
+// IsMock returns true if this clock is effectively the 'global clock'.
 func (c TestClock) IsMock() bool {
 	return c.m.Load()
 }
 
+// Reset removes this clock from being the 'global clock' and resets the utc.Now
+// func to the default.
 func (c TestClock) Reset() {
 	ResetNow()
 }
@@ -68,7 +79,8 @@ func (c TestClock) wc() UTC {
 }
 
 // Now returns the current time. The returned time is taken from the wall clock
-// if this TestClock was started without any time or with Zero.
+// if this TestClock was started without any time or with Zero or if it was set
+// to Zero or no time.
 func (c TestClock) Now() UTC {
 	n := c.u.Load()
 	if n == nil || *n == Zero {

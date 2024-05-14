@@ -1,8 +1,24 @@
 package utc
 
 import (
+	"sync"
 	"time"
 )
+
+// nowFnMu protects access to nowFn
+var nowFnMu sync.Mutex
+
+func init() {
+	nowFn = now
+	setNowFn(now)
+}
+
+// allowClock allows using a custom Clock and is called during test whenever setClock is called.
+func allowClock() {
+	nowFnMu.Lock()
+	defer nowFnMu.Unlock()
+	nowFn = nowFnClock
+}
 
 type clockFn func() UTC
 
@@ -44,11 +60,15 @@ func ResetNow() {
 	setNowFn(now)
 }
 
+// setNowFn sets the given function as the Clock to use for tests.
 func setNowFn(fn func() UTC) {
 	setClock(clockFn(fn))
 }
 
 // nowFn is the function used to get the current time and can be mocked with MockNow/MockNowFn
-func nowFn() UTC {
+var nowFn func() UTC
+
+// nowFnClock is the function used to get the current time via a Clock.
+func nowFnClock() UTC {
 	return getClock().Now()
 }
