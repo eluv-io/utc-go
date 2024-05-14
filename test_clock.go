@@ -5,7 +5,10 @@ import (
 	"time"
 )
 
-// TestClock is a Clock that can be used to mock time.
+// TestClock is a Clock that can be set to a given UTC value or reset.
+// Function Now:
+// - returns the previously set UTC or
+// - returns the wall clock if no value or Zero was set
 type TestClock struct {
 	mono bool
 	ms   bool
@@ -42,7 +45,7 @@ func (c TestClock) MockNow() TestClock {
 	return c
 }
 
-func (c TestClock) UnMocked() {
+func (c TestClock) unMocked() {
 	c.m.Store(false)
 }
 

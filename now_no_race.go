@@ -22,10 +22,10 @@ func setClock(c Clock) {
 	clock = c
 
 	type um interface {
-		UnMocked()
+		unMocked()
 	}
 	if unm, ok := old.(um); ok {
-		unm.UnMocked()
+		unm.unMocked()
 	}
 
 }
