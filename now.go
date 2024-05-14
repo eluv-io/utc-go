@@ -10,7 +10,6 @@ var nowFnMu sync.Mutex
 
 func init() {
 	nowFn = now
-	setNowFn(now)
 }
 
 // allowClock allows using a custom Clock and is called during test whenever setClock is called.
