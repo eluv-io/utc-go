@@ -72,3 +72,31 @@ func TestClockUntil(t *testing.T) {
 
 	assert.Equal(t, time.Minute, utc.Until(thenUTC))
 }
+
+// TestRace shows a race between utc.Now() and assigning nowFn = nowFnClock
+// and how to avoid it.
+func TestRace(t *testing.T) {
+	// without the call below to ResetNow, running the test with -race fails. Note
+	// that installing any clock - like with utc.MockNowClock(utc.NewMonoClock()) -
+	// instead of calling ResetNow also works.
+	utc.ResetNow()
+
+	stopCh := make(chan struct{})
+	defer close(stopCh)
+
+	go func() {
+		for {
+			select {
+			case <-stopCh:
+				break
+			default:
+				utc.Now()
+				time.Sleep(time.Millisecond)
+			}
+		}
+	}()
+	for i := 0; i < 100; i++ {
+		utc.NewWallClock().MockNow()
+	}
+
+}

@@ -35,7 +35,18 @@ func nowFnClock() UTC {
 //   - in test code nowFn is replaced with nowFnClock which will incur a lookup into atomicClock
 //
 // The function minimizes changes to nowFn, hence - although the mutex does not
-// protect read access to nowFn - the probability of race is reduced.
+// protect read access to nowFn - the probability of race is reduced. An example of
+// such a race will happen whenever a test that does not mock UTC has a goroutine
+// that does not terminate (and keep calling utc.Now) while another test starts and
+// install a clock to mock UTC (see TestRace in test_clock_test.go). This kind of
+// case clearly results from a faulty test and the -race flag helps in detecting it.
+// On the other hand, a package that would like to prevent any such race could implement
+// an initializer using:
+// //go:build race
+//
+//	func init(){
+//	 utc.ResetNow()
+//	}
 func allowClock() {
 	nowFnMu.Lock()
 	defer nowFnMu.Unlock()
