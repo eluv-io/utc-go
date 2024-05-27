@@ -1,15 +1,55 @@
 package utc
 
-import "sync/atomic"
+import (
+	"reflect"
+	"runtime"
+	"sync"
+	"sync/atomic"
+)
 
+// functions in this file implement use of a Clock to return the current UTC.
+// This is intended for tests and won't happen when running production code.
+// See comments of allowClock.
+
+// clocker wraps a Clock
 type clocker struct {
 	c Clock
 }
 
-var atomicClock atomic.Pointer[clocker]
+var (
+	// nowFnMu protects access to nowFn when nowFn is set to nowFnClock. This is
+	// intended to be used during tests only.
+	nowFnMu sync.Mutex
+	// atomicClock stores the current Clock
+	atomicClock atomic.Pointer[clocker]
+)
 
+// nowFnClock is the function used to get the current time via a Clock during tests.
+func nowFnClock() UTC {
+	return getClock().Now()
+}
+
+// allowClock allows using a custom Clock and is called during test whenever setClock is called.
+//   - in production code nowFn is initialised to function now, is never updated and
+//     therefore does not need any protection against races.
+//   - in test code nowFn is replaced with nowFnClock which will incur a lookup into atomicClock
+//
+// The function minimizes changes to nowFn, hence - although the mutex does not
+// protect read access to nowFn - the probability of race is reduced.
+func allowClock() {
+	nowFnMu.Lock()
+	defer nowFnMu.Unlock()
+	if runtime.FuncForPC(reflect.ValueOf(nowFn).Pointer()) == runtime.FuncForPC(reflect.ValueOf(nowFnClock).Pointer()) {
+		//nowFnClock already set
+		return
+	}
+	nowFn = nowFnClock
+}
+
+// getClock returns the current Clock stored in atomicClock or the default 'now'
+// function is no clock was stored.
 func getClock() Clock {
-	var fn Clock = clockFn(now)
+	var fn Clock = ClockFn(now)
 	m := atomicClock.Load()
 	if m != nil && m.c != nil {
 		fn = m.c
@@ -17,6 +57,8 @@ func getClock() Clock {
 	return fn
 }
 
+// setClock sets c to be the current clock. This function is intended to be used
+// in tests only. It first calls allowClock, then replaces the current clock with c.
 func setClock(c Clock) {
 	allowClock()
 
@@ -28,6 +70,8 @@ func setClock(c Clock) {
 		unMocked()
 	}
 	if unm, ok := old.(um); ok {
+		// notify the previous clock that it is no more the current 'mock'
+		// unMocked is currently implemented only by TestClock
 		unm.unMocked()
 	}
 }

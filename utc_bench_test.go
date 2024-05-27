@@ -1,6 +1,9 @@
 package utc
 
-import "testing"
+import (
+	"testing"
+	"time"
+)
 
 // BenchmarkNow test performances of the various now functions:
 // - utc.Now using nowFn
@@ -54,9 +57,47 @@ func doBenchmarkNow(b *testing.B, withClock bool) {
 		fn   func()
 	}{
 		{"utc.Now", func() { _ = Now() }},
-		{"utc.Mono", func() { _ = Mono.Now() }},
-		{"utc.WallClock", func() { _ = WallClock.Now() }},
-		{"utc.WallClockMs", func() { _ = WallClockMs.Now() }},
+		{"utc.Mono", func() { _ = Mono() }},
+		{"utc.WallClock", func() { _ = WallClock() }},
+		{"utc.WallClockMs", func() { _ = WallClockMs() }},
+	}
+	for _, bm := range benchmarks {
+		b.Run(bm.name, func(b *testing.B) {
+			b.ReportAllocs()
+			for i := 0; i < b.N; i++ {
+				bm.fn()
+			}
+		})
+	}
+}
+
+// BenchmarkTimeNow
+// BenchmarkTimeNow/time.Now
+// BenchmarkTimeNow/time.Now-8         	 9869420	       111.8 ns/op	       0 B/op	       0 allocs/op
+// BenchmarkTimeNow/utc.Now
+// BenchmarkTimeNow/utc.Now-8          	 9474093	       125.8 ns/op	       0 B/op	       0 allocs/op
+// BenchmarkTimeNow/utc.monotonic
+// BenchmarkTimeNow/utc.monotonic-8    	 9015828	       128.4 ns/op	       0 B/op	       0 allocs/op
+// BenchmarkTimeNow/utc.Mono
+// BenchmarkTimeNow/utc.Mono-8         	 9543199	       127.5 ns/op	       0 B/op	       0 allocs/op
+// BenchmarkTimeNow/utc.WallClock
+// BenchmarkTimeNow/utc.WallClock-8    	 7693312	       153.0 ns/op	       0 B/op	       0 allocs/op
+// BenchmarkTimeNow/utc.WallClockMs
+// BenchmarkTimeNow/utc.WallClockMs-8  	 5173959	       223.3 ns/op	       0 B/op	       0 allocs/op
+func BenchmarkTimeNow(b *testing.B) {
+	b.StopTimer()
+	nowFn = now
+	b.StartTimer()
+	benchmarks := []struct {
+		name string
+		fn   func()
+	}{
+		{"time.Now", func() { _ = time.Now() }},
+		{"utc.Now", func() { _ = Now() }},
+		{"utc.monotonic", func() { _ = monotonic.Now() }},
+		{"utc.Mono", func() { _ = Mono() }},
+		{"utc.WallClock", func() { _ = WallClock() }},
+		{"utc.WallClockMs", func() { _ = WallClockMs() }},
 	}
 	for _, bm := range benchmarks {
 		b.Run(bm.name, func(b *testing.B) {

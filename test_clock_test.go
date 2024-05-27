@@ -23,7 +23,7 @@ func TestNewWallClock(t *testing.T) {
 func TestClockMock(t *testing.T) {
 	wc := utc.NewWallClock().MockNow()
 	assert.True(t, wc.IsMock())
-	defer wc.Reset()
+	defer wc.UnmockNow()
 	assert.False(t, utc.Now().Equal(utc.Zero))
 
 	d2020 := utc.MustParse("2020-01-01")
@@ -49,7 +49,7 @@ func TestClockMock(t *testing.T) {
 
 	wc.Set(d2020.Add(time.Hour))
 	assert.Equal(t, utc.Now(), wc.Now())
-	wc.Reset()
+	wc.UnmockNow()
 	assert.False(t, wc.IsMock())
 	assertRestored()
 	assert.NotEqual(t, utc.Now(), wc.Now())
@@ -59,7 +59,7 @@ func TestClockSince(t *testing.T) {
 	nowUTC := utc.Now()
 	wc := utc.NewWallClock(nowUTC).MockNow()
 	wc.Add(time.Minute)
-	defer wc.Reset()
+	defer wc.UnmockNow()
 
 	assert.Equal(t, time.Minute, utc.Since(nowUTC))
 }
@@ -68,7 +68,7 @@ func TestClockUntil(t *testing.T) {
 	thenUTC := utc.Now().Add(time.Second)
 	wc := utc.NewWallClock(thenUTC).MockNow()
 	wc.Add(-time.Minute)
-	defer wc.Reset()
+	defer wc.UnmockNow()
 
 	assert.Equal(t, time.Minute, utc.Until(thenUTC))
 }

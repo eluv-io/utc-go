@@ -9,13 +9,13 @@ import (
 )
 
 func TestWallClock(t *testing.T) {
-	now := WallClock.Now()
-	ms := WallClockMs.Now()
+	now := WallClock()
+	ms := WallClockMs()
 	require.True(t, ms.Sub(now) <= time.Millisecond)
 }
 
 func TestWallClockMs(t *testing.T) {
-	now := WallClockMs.Now()
+	now := WallClockMs()
 	bb, err := json.Marshal(now)
 	require.NoError(t, err)
 
@@ -26,7 +26,7 @@ func TestWallClockMs(t *testing.T) {
 }
 
 func TestMono(t *testing.T) {
-	now := Mono.Now()
+	now := Mono()
 	bb, err := json.Marshal(now)
 	require.NoError(t, err)
 

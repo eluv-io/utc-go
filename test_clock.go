@@ -12,10 +12,10 @@ import (
 // A TestClock becomes effectively used as 'the global clock' after calling its
 // function MockNow(). When the clock is effective, func IsMock returns true.
 type TestClock struct {
-	mono bool
-	ms   bool
-	u    *atomic.Pointer[UTC]
-	m    *atomic.Bool
+	mono            bool
+	millisPrecision bool
+	now             *atomic.Pointer[UTC]
+	isMock          *atomic.Bool
 }
 
 // NewMonoClock returns a TestClock with the monotonic clock reading.
@@ -36,12 +36,14 @@ func NewWallClockMs(u ...UTC) TestClock {
 
 func newTestClock(mono, ms bool, u ...UTC) TestClock {
 	ret := TestClock{
-		mono: mono,
-		ms:   ms,
-		u:    new(atomic.Pointer[UTC]),
-		m:    &atomic.Bool{},
+		mono:            mono,
+		millisPrecision: ms,
+		now:             new(atomic.Pointer[UTC]),
+		isMock:          &atomic.Bool{},
 	}
-	ret.Set(u...)
+	if len(u) > 0 {
+		ret.Set(u[0])
+	}
 	return ret
 }
 
@@ -49,40 +51,40 @@ func newTestClock(mono, ms bool, u ...UTC) TestClock {
 // what the function Now of this clock returns.
 func (c TestClock) MockNow() TestClock {
 	setClock(c)
-	c.m.Store(true)
+	c.isMock.Store(true)
 	return c
 }
 
 func (c TestClock) unMocked() {
-	c.m.Store(false)
+	c.isMock.Store(false)
 }
 
 // IsMock returns true if this clock is effectively the 'global clock'.
 func (c TestClock) IsMock() bool {
-	return c.m.Load()
+	return c.isMock.Load()
 }
 
-// Reset removes this clock from being the 'global clock' and resets the utc.Now
-// func to the default.
-func (c TestClock) Reset() {
+// UnmockNow removes this clock from being the 'global clock' and resets the
+// utc.Now func to the default.
+func (c TestClock) UnmockNow() {
 	ResetNow()
 }
 
 func (c TestClock) wc() UTC {
 	if !c.mono {
-		if c.ms {
-			return WallClockMs.Now()
+		if c.millisPrecision {
+			return WallClockMs()
 		}
-		return WallClock.Now()
+		return WallClock()
 	}
-	return Mono.Now()
+	return Mono()
 }
 
 // Now returns the current time. The returned time is taken from the wall clock
 // if this TestClock was started without any time or with Zero or if it was set
 // to Zero or no time.
 func (c TestClock) Now() UTC {
-	n := c.u.Load()
+	n := c.now.Load()
 	if n == nil || *n == Zero {
 		return c.wc()
 	}
@@ -91,7 +93,7 @@ func (c TestClock) Now() UTC {
 
 // Get returns the previously set time or Zero if it was not set.
 func (c TestClock) Get() UTC {
-	ret := c.u.Load()
+	ret := c.now.Load()
 	if ret == nil {
 		return Zero
 	}
@@ -99,27 +101,37 @@ func (c TestClock) Get() UTC {
 }
 
 // Set sets the given UTC time and returns the previously set time or Zero if
-// it was not set. If no parameter is specified, the current time is unset and
-// calls to this TestClock.Now will be returning the actual current time from
-// the wall clock.
-func (c TestClock) Set(u ...UTC) UTC {
+// it was not set. If the parameter is Zero, the function works as if Unset was
+// called.
+func (c TestClock) Set(u UTC) UTC {
+	return c.set(u)
+}
+
+// Unset unsets the current time and returns the previously set value.
+// This resets this TestClock to behave as a wall clock in future calls to Now.
+// This is equivalent to calling c.Set(Zero)
+func (c TestClock) Unset() UTC {
+	return c.set(Zero)
+}
+
+func (c TestClock) set(u UTC) UTC {
 	var n *UTC
-	if len(u) > 0 {
-		switch u[0] {
-		case Zero:
-			n = nil
-		default:
-			w := u[0]
-			if !c.mono {
-				w = w.StripMono()
-				if c.ms {
-					w = w.Round(time.Millisecond)
-				}
+
+	switch u {
+	case Zero:
+		n = nil
+	default:
+		w := u
+		if !c.mono {
+			w = w.StripMono()
+			if c.millisPrecision {
+				w = w.Round(time.Millisecond)
 			}
-			n = &w
 		}
+		n = &w
 	}
-	ret := c.u.Swap(n)
+
+	ret := c.now.Swap(n)
 	if ret == nil {
 		return Zero
 	}
@@ -135,12 +147,6 @@ func (c TestClock) Add(t time.Duration) UTC {
 	ret := n.Add(t)
 	c.Set(ret)
 	return ret
-}
-
-// Wall reset this TestClock to behave as a wall clock in future calls to Now
-// and returns the previously set value. This is equivalent to calling c.Set(Zero)
-func (c TestClock) Wall() UTC {
-	return c.Set(Zero)
 }
 
 // SetNow sets this TestClock to the current wall clock and returns the previously

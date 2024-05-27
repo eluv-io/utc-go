@@ -6,17 +6,33 @@ type Clock interface {
 	Now() UTC
 }
 
+// ClockFn is a function implementing Clock
+type ClockFn func() UTC
+
+func (fn ClockFn) Now() UTC {
+	return fn()
+}
+
 var (
-	// WallClock is a Clock returning the wall clock (i.e. where the monotonic
-	// clock reading has been stripped).
-	WallClock = wallClock{}
-
-	// WallClockMs is a WallClock rounded to the millisecond.
-	WallClockMs = wallClock{ms: true}
-
-	// Mono is a Clock returning the current time with the monotonic clock.
-	Mono = mono{}
+	wall      = wallClock{}
+	wallMs    = wallClock{ms: true}
+	monotonic = mono{}
 )
+
+// WallClock returns the wall clock (i.e. where the monotonic clock reading has been stripped).
+func WallClock() UTC {
+	return wall.Now()
+}
+
+// WallClockMs is like WallClock rounded to the millisecond.
+func WallClockMs() UTC {
+	return wallMs.Now()
+}
+
+// Mono returns the current time with the monotonic clock.
+func Mono() UTC {
+	return monotonic.Now()
+}
 
 type wallClock struct {
 	ms bool

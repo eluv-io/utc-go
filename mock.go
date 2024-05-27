@@ -27,3 +27,8 @@ func MockNow(time UTC) (restore func()) {
 		return time
 	})
 }
+
+// MockNowClock mocks now with a test clock. Equivalent to calling clock.MockNow().
+func MockNowClock(clock TestClock) {
+	clock.MockNow()
+}
