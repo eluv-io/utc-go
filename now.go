@@ -1,9 +1,16 @@
 package utc
 
-import "time"
+import (
+	"time"
+)
 
-// nowFn is the function used to get the current time and can be mocked with MockNow/MockNowFn
-var nowFn = now
+// nowFn is the function used to get the current time and can be mocked with
+// MockNow, MockNowFn, MockNowClock as described in comments of setClock and allowClock.
+var nowFn func() UTC
+
+func init() {
+	nowFn = now
+}
 
 // New creates a new UTC instance from the given time. Use utc.Now() to get the
 // current time.
@@ -16,40 +23,30 @@ func Now() UTC {
 	return nowFn()
 }
 
+// WallNow returns Now as a wall clock, i.e. with the monotonic clock reading stripped.
+// WallNow is equivalent to calling Now().StripMono().
+func WallNow() UTC {
+	return Now().StripMono()
+}
+
+// WallNowMs returns Now as a wall clock rounded to the millisecond.
+// WallNowMs is equivalent to calling WallNow().Round(time.Millisecond) and useful in tests where UTC instances are
+// serialized and compared.
+func WallNowMs() UTC {
+	return WallNow().Round(time.Millisecond)
+}
+
 // now is the default, non-mocked value of Now.
 func now() UTC {
 	return New(time.Now())
 }
 
-// MockNowFn allows to replace the Now func variable with a mock function and returns a function to restore the default
-// Now() implementation.
-//
-// Usage:
-//	defer MockNow(func() UTC { ... })()
-// or
-//	reset := MockNow(func() UTC { ... })
-//	defer reset()
-func MockNowFn(fn func() UTC) (restore func()) {
-	nowFn = fn
-	return ResetNow
-}
-
-// MockNow allows to replace the Now func variable with a function that returns
-// the given constant time and returns itself a function to restore the default
-// Now() implementation.
-//
-// Usage:
-//	defer MockNow(utc.MustParse("2020-01-01"))()
-// or
-//	reset := MockNow(utc.MustParse("2020-01-01"))
-//	defer reset()
-func MockNow(time UTC) (restore func()) {
-	return MockNowFn(func() UTC {
-		return time
-	})
-}
-
 // ResetNow resets the Now func to the default implementation.
 func ResetNow() {
-	nowFn = now
+	setNowFn(now)
+}
+
+// setNowFn sets the given function as the Clock to use for tests.
+func setNowFn(fn func() UTC) {
+	setClock(ClockFn(fn))
 }
