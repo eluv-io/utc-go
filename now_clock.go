@@ -38,7 +38,7 @@ func nowFnClock() UTC {
 // protect read access to nowFn - the probability of race is reduced. An example of
 // such a race will happen whenever a test that does not mock UTC has a goroutine
 // that does not terminate (and keep calling utc.Now) while another test starts and
-// install a clock to mock UTC (see TestRace in test_clock_test.go). This kind of
+// installs a clock to mock UTC (see TestRace in test_clock_test.go). This kind of
 // case clearly results from a faulty test and the -race flag helps in detecting it.
 // On the other hand, a package that would like to prevent any such race could implement
 // an initializer using:
@@ -58,7 +58,7 @@ func allowClock() {
 }
 
 // getClock returns the current Clock stored in atomicClock or the default 'now'
-// function is no clock was stored.
+// function if no clock was stored.
 func getClock() Clock {
 	var fn Clock = ClockFn(now)
 	m := atomicClock.Load()
@@ -69,7 +69,8 @@ func getClock() Clock {
 }
 
 // setClock sets c to be the current clock. This function is intended to be used
-// in tests only. It first calls allowClock, then replaces the current clock with c.
+// in tests only through one of the MockNowXyz functions. It first calls allowClock,
+// then replaces the current clock with c.
 func setClock(c Clock) {
 	allowClock()
 
