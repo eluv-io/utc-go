@@ -8,6 +8,16 @@ package utc
 // or
 // reset := MockNow(func() UTC { ... })
 // defer reset()
+//
+// Using MockNowFn like below and updating the local variable from multiple
+// go routines is racy, hence the function is marked as deprecated.
+//
+//	now := utc.Now()
+//	reset := utc.MockNowFn(func() utc.UTC { return now })
+//	...
+//	now = now.Add(time.Duration(i+1)*time.Second))
+//
+// Deprecated use one of the NewXXClock().MockNow()
 func MockNowFn(fn func() UTC) (restore func()) {
 	setNowFn(fn)
 	return ResetNow
