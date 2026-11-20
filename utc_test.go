@@ -508,6 +508,36 @@ func TestUTC_Mono(t *testing.T) {
 	}
 }
 
+// TestDeepEqual verifies that instances of the same instant are equal with == and reflect.DeepEqual (as used by
+// require.Equal), regardless of how they were created and the location of the original time.
+func TestDeepEqual(t *testing.T) {
+	parsed := utc.MustParse("2025-11-19T12:01:02.345Z")
+	local := time.Date(2025, 11, 19, 12, 1, 2, 345_000_000, time.UTC).In(time.FixedZone("CET", 3600))
+	tests := []struct {
+		name string
+		u    utc.UTC
+	}{
+		{"UnixMilli", utc.UnixMilli(parsed.UnixMilli())},
+		{"Unix", utc.Unix(parsed.Unix(), int64(parsed.Nanosecond()))},
+		{"New(local)", utc.New(local)},
+		{"Add", utc.New(local.Add(-time.Hour)).Add(time.Hour)},
+		{"Truncate", utc.New(local.Add(time.Microsecond)).Truncate(time.Millisecond)},
+		{"Round", utc.New(local.Add(time.Microsecond)).Round(time.Millisecond)},
+		{"StripMono", utc.New(local).StripMono()},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			require.Equal(t, parsed, test.u)
+			require.True(t, parsed == test.u)
+		})
+	}
+
+	// a monotonic clock reading is retained, and makes the instance differ
+	now := utc.New(time.Now())
+	require.NotEqual(t, now, now.StripMono())
+	require.True(t, now.Equal(now.StripMono()))
+}
+
 func TestUTC_Add(t *testing.T) {
 	testFnOneDate(t, func(t *testing.T, date utc.UTC) {
 		for _, dur := range durations {
