@@ -14,8 +14,17 @@ func init() {
 
 // New creates a new UTC instance from the given time. Use utc.Now() to get the
 // current time.
+//
+// The original time instance is retained only if it carries a monotonic clock reading, which time measurements need.
+// Otherwise it is converted to UTC like the wall clock, so that instances created from the same instant compare equal
+// with == and reflect.DeepEqual, regardless of the location of the original time.
 func New(t time.Time) UTC {
-	return UTC{Time: t.UTC(), mono: t}
+	u := t.UTC()
+	if t == t.Round(0) {
+		// no monotonic clock reading: Round(0) strips only that
+		return UTC{Time: u, mono: u}
+	}
+	return UTC{Time: u, mono: t}
 }
 
 // Now returns the current time as UTC instance. Now can be mocked for tests: see MockNow() function.

@@ -61,7 +61,8 @@ type UTC struct {
 
 // Mono returns the time.Time instance for time measurement operations. Note that the returned instance has an actual
 // monotonic clock only if the original Time instance, from which this UTC was created, had a monotonic clock. This is
-// the case if created through utc.Now() (unless mocked) or New(time.Now())
+// the case if created through utc.Now() (unless mocked) or New(time.Now()). Without a monotonic clock, the returned
+// instance is in UTC.
 func (u *UTC) Mono() time.Time {
 	return u.mono
 }
